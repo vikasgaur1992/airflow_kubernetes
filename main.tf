@@ -29,16 +29,31 @@ resource "aws_security_group" "airflow_sg" {
   }
 }
 
+# 2. Additional EBS Volume for Airflow Jobs
+resource "aws_ebs_volume" "airflow_jobs_vol" {
+  availability_zone = aws_instance.airflow_server.availability_zone
+  size              = 20
+  type              = "gp3"
+  tags = { Name = "Airflow-Jobs-Data" }
+}
+
+# 3. Attach the Volume
+resource "aws_volume_attachment" "ebs_att" {
+  device_name = "/dev/sdh"
+  volume_id   = aws_ebs_volume.airflow_jobs_vol.id
+  instance_id = aws_instance.airflow_server.id
+}
+
 # 2. EC2 Instance Provisioning
 resource "aws_instance" "airflow_server" {
   ami           = "ami-0c7217cdde317cfec" # Ubuntu 22.04 LTS
-  instance_type = "t3.large"             # Recommended min for Minikube
+  instance_type = "t3.xlarge"             # Recommended min for Minikube
   key_name      = "ltim"                  # Your existing key
   
 # --- ADD THIS BLOCK ---
   root_block_device {
     volume_size           = 50    # Increase to 30GB
-    volume_type           = "gp2" # General Purpose SSD (newer/faster)
+    volume_type           = "gp3" # General Purpose SSD (newer/faster)
     delete_on_termination = true
   }
 
